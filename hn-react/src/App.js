@@ -1,27 +1,28 @@
-import React, { Component } from "react";
-import { Flags } from "react-feature-flags";
+import React, { useEffect, useState } from "react";
+import { FlagsProvider } from "react-feature-flags";
+import axios from "axios";
+import Main from "./Main";
+import defaultFlags from "./flags";
 
-export default class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header>
-          <h1>Feature flags with react-feature-flags</h1>
-        </header>
-        <Flags
-          authorizedFlags={["vipOnly"]}
-          renderOn={(flag) => {
-            console.log(flag);
-            return <h1>VIP (flag: {flag.map((f) => f.name).join(", ")})</h1>;
-          }}
-          renderOff={() => <h1>NO VIP</h1>}
-        />
-        <Flags authorizedFlags={["vipOnly"]}>
-          <h1>VIP (children props)</h1>
-        </Flags>
-        <Flags authorizedFlags={["adminOnly", "vipOnly"]} exactFlags renderOn={(flag) => <h1>Admin and VIP (flag: {flag.map((f) => f.name).join(", ")})</h1>} />
-        <footer>End</footer>
-      </div>
-    );
-  }
-}
+const App = () => {
+  const [flags, setFlags] = useState(defaultFlags);
+
+  useEffect(() => {
+    axios.get("http://localhost:1337/api/flags").then((response) => {
+      const data = response.data.data;
+      const fetchedFlags = data.map((d) => {
+        const { name, isActive } = d.attributes;
+        return { name, isActive };
+      });
+      Array.isArray(fetchedFlags) && setFlags(fetchedFlags);
+    });
+  }, []);
+
+  return (
+    <FlagsProvider value={flags}>
+      <Main />
+    </FlagsProvider>
+  );
+};
+
+export default App;
